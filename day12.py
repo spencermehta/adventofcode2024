@@ -1,7 +1,7 @@
 from collections import deque
 
 
-with open("12.test3") as f:
+with open("12.in") as f:
     lines = f.readlines()
 lines = [line.strip() for line in lines]
 
@@ -10,7 +10,6 @@ def p1():
     coords = set()
     Y = len(grid)
     X = len(grid[0])
-    pg(grid)
 
     for y in range(Y):
         for x in range(X):
@@ -24,14 +23,10 @@ def p1():
         for co in plot:
             if co in coords:
                 coords.remove(co)
-    print(plots)
 
     tot = 0
     tot2 = 0
     for plot in plots:
-        plant = ""
-        for c in plot:
-            plant = grid[c[1]][c[0]]
         a = area(plot)
         p = perimeter(plot, grid, X, Y)
         s = sides(plot, grid, X, Y)
@@ -39,7 +34,6 @@ def p1():
         price2 = a * s
         tot += price
         tot2 += price2
-        print(f"{plant=} {a=} {p=} {s=} {price=} {price2=}")
     print(tot)
     print(tot2)
 
@@ -75,22 +69,38 @@ DIRS = [
 ]
 
 def sides(plot, grid, X, Y):
-    lines = set()
+    side_grid = [[[] for _ in range(X)] for _ in range(Y)]
     for c in plot:
-        x, y = c
-        print(f"{c=}")
-        plant = grid[y][x]
-        for d in DIRS:
-            co = add_coords((x, y), d)
-            xco, yco = co
-            v = grid[yco][xco] if in_bounds(co, X, Y) else None
-            print(f"{v=} {co=}")
-            if v != plant:
-                line = get_line(c, d)
-                print(f"{line=}")
-                lines.add(line)
-    print(f"{lines=}")
-    return len(lines)
+        sides = get_sides_of_point(c, grid, X, Y)
+        side_grid[c[1]][c[0]] = sides
+
+    side_count = 0
+    for (x, y) in plot:
+        for line in side_grid[y][x]:
+            (xx, yy) = line
+            if yy == None:
+                xn, yn = add_coords((x, y), (0, 1))
+                if not in_bounds((xn, yn), X, Y) or line not in side_grid[yn][xn]:
+                    side_count += 1
+            elif xx == None:
+                xn, yn = add_coords((x, y), (1, 0))
+                if not in_bounds((xn, yn), X, Y) or line not in side_grid[yn][xn]:
+                    side_count += 1
+    return side_count
+
+
+def get_sides_of_point(c, grid, X, Y):
+    lines = set()
+    x, y = c
+    plant = grid[y][x]
+    for d in DIRS:
+        co = add_coords((x, y), d)
+        xco, yco = co
+        v = grid[yco][xco] if in_bounds(co, X, Y) else None
+        if v != plant:
+            line = get_line(c, d)
+            lines.add(line)
+    return lines
 
 def perimeter(plot, grid, X, Y):
     perimeter = 0
@@ -103,7 +113,6 @@ def perimeter(plot, grid, X, Y):
             xco, yco = co
             v = grid[yco][xco] if in_bounds(co, X, Y) else None
             
-        #print(f"{v=} {co=}")
             if v != plant:
                 perimeter += 1
     return perimeter
@@ -117,10 +126,20 @@ def add_coords(one, two):
     return (x1 + x2, y1 + y2)
 
 def get_line(c, d):
-    x1, y1 = c
-    x2, y2 = d
-    x, y = (abs(x1*x2), abs(y1*y2))
-    return (x, y, d[0], d[1])
+    x, y = c
+    dx, dy = d
+    if dx == 0:
+        if dy == -1:
+            line = (None, y)
+        else:
+            line = (None, y+1)
+    else:
+        if dx == -1:
+            line = (x, None)
+        else:
+            line = (x+1, None)
+
+    return line
 
 def in_bounds(coord, X, Y):
     x, y = coord
