@@ -68,27 +68,20 @@ def p2():
 
     program = [int(n) for n in program_in.split()[1].split(',')]
 
-    i = 2
-   #i=252776563040076
-    i=35184386948113
-    prev = 0
+    i = 0
+    matches = 0
     while True:
-        a = i
+        i+=1
+        #a = i
+        a = i * 8**8 + 0o70536021
         output = run(a,b,c, program)
 
-        if output[:7] == [2,4,1,3,7,5,0]:
-            print(i, output, len(output) - len(program), i-prev)
-            prev = i
         if output == program:
-            print(i)
+            print(a)
             break
-        if len(output) < len(program):
-            i*=2
-        else:
-            #i+=1
-            #i+=261787
-            i+=260736
-
+        elif len(output) > matches:
+            print(a, oct(a), matches, len(program))
+            matches = len(output)
 
 
 def run(a, b, c, program):
@@ -119,6 +112,8 @@ def run(a, b, c, program):
         elif opcode == 5:
             v = combo(operand, a, b, c) % 8
             output.append(v)
+            if output[len(output)-1] != program[len(output)-1]:
+                return output
         elif opcode == 6:
             numerator = a
             denominator = 2 ** (combo(operand, a, b, c))
