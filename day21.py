@@ -1,3 +1,5 @@
+from collections import deque
+from itertools import product
 import sys
 sys.setrecursionlimit(10**6)
 
@@ -18,129 +20,109 @@ numerical_keypad = [
     [ None, '0', 'A']
 ]
 
-def p1_v2():
-    for line in lines:
-        last_robot = (2, 3)
-        intermediate_robots = [
-            (2, 0),
-            (2, 0),
-            #(2, 0)
-        ]
-        last_robot_moves = ""
-        intermediate_robot_moves = [
-            "",
-            ""
-        ]
+DIRS = {
+    '>': (1, 0),
+    '<': (-1, 0),
+    '^': (0, -1),
+    'v': (0, 1)
+}
 
-        for button in line:
-            coords = get_numerical_coords(button)
-            diff = tuple_diff(coords, last_robot)
-            moves = get_moves(diff) + 'A'
-            last_robot_moves += moves
-            last_robot = coords
+def get_keypad_paths(keypad):
+    buttons = {}
+    for y in range(len(keypad)):
+        for x in range(len(keypad[0])):
+            if keypad[y][x] is None:
+                continue
+            buttons[keypad[y][x]] = (x, y)
 
-            for ri, ir in enumerate(intermediate_robots):
-                
-                while len(moves) > 0:
-                    cheapest_move_i = get_cheapest_move(ir, moves)
-                    cheapest_move = moves[cheapest_move_i]
-                    moves = moves[:cheapest_move_i] + moves[cheapest_move_i+1:]
-                    intermediate_robot_moves[ri] += cheapest_move
-                    ir = get_directional_coords(cheapest_move)
+    sequences = {}
+    for button1 in buttons:
+        for button2 in buttons:
+            if button1 == button2:
+                sequences[(button1, button2)] = ["A"]
+                continue
 
+            possible_sequences = []
+            q = deque()
+            q.append((buttons[button1], ""))
+            best_len = 9999
+            exceeded_best_len = False
 
+            while len(q) > 0 and not exceeded_best_len:
+                (x,y), current_seq = q.popleft()
 
+                for d in DIRS:
+                    dx, dy = DIRS[d]
+                    nx, ny = x + dx, y + dy
 
-def get_cheapest_move(p, moves):
-    minimum = 999999
-    minimum_i = -1
-    for i, move in enumerate(moves):
-        coords = get_directional_coords(move)
-        dx, dy = tuple_diff(coords, p)
-        if abs(dx) + abs(dy) < minimum:
-            minimum = abs(dx) + abs(dy)
-            minimum_i = i
-    return minimum_i
+                    if in_bounds(nx, ny, len(keypad[0]), len(keypad)) and keypad[ny][nx] is not None:
+                        if (nx, ny) == buttons[button2]:
+                            possible_sequences.append(current_seq + d + "A")
+                            best_len = len(current_seq+d)
+                        if len(current_seq+d) > best_len:
+                            exceeded_best_len = True
+                            break
+                        q.append(((nx, ny), current_seq+d))
+
+            sequences[(button1, button2)] = possible_sequences
+
+    return sequences
+
+def in_bounds(x, y, X, Y):
+    return x >= 0 and x < X and y >= 0 and y < Y
+
+numerical_keypad_paths = get_keypad_paths(numerical_keypad)
+directional_keypad_paths = get_keypad_paths(directional_keypad)
+
+def compute(paths):
+    path_map = {}
+    for path in list(product(*paths)):
+        path = "".join(path)
+        movements = list(zip("A" + path, path))
+
+        possible_paths = []
+        for movement in movements:
+            paths = directional_keypad_paths[movement]
+            possible_paths.append(paths)
+        path_map[path] = possible_paths
+    return path_map
 
 def p1():
-    tot=0
+    tot = 0
     for line in lines:
-        last_robot = (2, 3)
-        intermediate_robots = [
-            (2, 0),
-            (2, 0),
-            #(2, 0)
-        ]
+        movements = list(zip("A" + line, line))
+        possible_paths = []
+        for movement in movements:
+            paths = numerical_keypad_paths[movement]
+            possible_paths.append(paths)
+        pm = compute(possible_paths)
+        minimum = float("+inf")
 
-        last_robot_moves = ""
-        for button in line:
-            coords = get_numerical_coords(button)
-            diff = tuple_diff(coords, last_robot)
-            moves = get_moves(diff) + 'A'
-            last_robot_moves += moves
-            last_robot = coords
-            #print(f"{button=} {coords=} {diff=} {moves=}")
+        for p in pm:
+            pm2 = compute(pm[p])
+            for p2 in pm2:
+                for path in list(product(*pm2[p2])):
+                    path = "".join(path)
+                    if len(path) < minimum:
+                        minimum = len(path)
 
-        print(f"{last_robot_moves=}")
+        ans = minimum * int(line[:len(line)-1])
+        tot += ans
 
-        buttons_to_press = last_robot_moves
-        for ir in intermediate_robots:
-            robot = ir
-            intermediate_moves = ""
-            for button in buttons_to_press:
-                coords = get_directional_coords(button)
-                diff = tuple_diff(coords, robot)
-                moves = get_moves(diff) + 'A'
-                intermediate_moves += moves
-                robot = coords
-
-            buttons_to_press = intermediate_moves
-
-            print(f"{buttons_to_press=}")
-        num_code = int(line[:len(line)-1])
-        res = num_code * len(buttons_to_press)
-        print(num_code, len(buttons_to_press), res)
-        tot+=res
     print(tot)
 
 
 
+
+
+
+
+
+
+
+
+
+
             
-
-def get_numerical_coords(button):
-    for y in range(len(numerical_keypad)):
-        for x in range(len(numerical_keypad[0])):
-            if numerical_keypad[y][x] == button:
-                return (x,y)
-
-def get_directional_coords(button):
-    for y in range(len(directional_keypad)):
-        for x in range(len(directional_keypad[0])):
-            if directional_keypad[y][x] == button:
-                return (x,y)
-
-def tuple_diff(p1, p2):
-    x1, y1 = p1
-    x2, y2 = p2
-    return x1-x2, y1-y2
-
-def get_moves(diff):
-    x, y = diff
-    moves = ""
-    if x > 0:
-        for _ in range(x):
-            moves += ">"
-    if y < 0:
-        for _ in range(abs(y)):
-            moves += "^"
-    if y > 0:
-        for _ in range(y):
-            moves += "v"
-    if x < 0:
-        for _ in range(abs(x)):
-            moves += "<"
-
-    
-    return moves
 
 p1()
