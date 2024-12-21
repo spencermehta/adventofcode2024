@@ -111,18 +111,50 @@ def p1():
 
     print(tot)
 
+C = {}
+def compute2(x, y, d):
+    if (x, y, d) in C:
+        return C[(x,y,d)]
+    
+    if d == 1:
+        return len(directional_keypad_paths[(x,y)][0])
 
+    minimum = float("inf")
+    for path in directional_keypad_paths[(x,y)]:
+        l = 0
+        for (nx, ny) in list(zip("A" + path, path)):
+            l += compute2(nx, ny, d-1)
+        if l < minimum:
+            minimum = l
+    C[(x,y,d)] = minimum
+    return minimum
 
+def p2():
+    tot = 0
+    robots = 24
+    for line in lines:
+        movements = list(zip("A" + line, line))
+        possible_paths = []
+        for movement in movements:
+            paths = numerical_keypad_paths[movement]
+            possible_paths.append(paths)
+        pm = compute(possible_paths)
+        minimum = float("+inf")
 
+        for p in pm:
+            for path in list(product(*pm[p])):
+                path = "".join(path)
+                movements = list(zip("A" + path, path))
+                l = 0
+                for (x,y) in movements:
+                    l += compute2(x, y, robots)
+                if l < minimum:
+                    minimum = l
 
-
-
-
-
-
-
-
-
+        ans = minimum * int(line[:len(line)-1])
+        tot += ans
+    print(tot)
             
 
 p1()
+p2()
