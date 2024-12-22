@@ -28,7 +28,7 @@ def p2():
     best = 0
     for i in range(len(lines[:1])):
         sequences = all_seqs[i]
-        for low in range(2000-4):
+        for low in range(2000-3):
             high = low+4
             buy_seq = sequences[low:high]
 
@@ -58,14 +58,11 @@ def simulate_buyer_buying(num, seq):
             return price
     return None
 
-
-
 def simulate_buyer(num):
     sequences = []
     prices = []
     n = num
     price = int(str(n)[len(str(n))-1:len(str(n))])
-    print(price)
     for _ in range(2000):
         prev = price
         n = simulate_day(n)
